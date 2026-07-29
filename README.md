@@ -1,13 +1,6 @@
-# tech-salary-estimator
 # 💼 Know Your Worth: Tech Salary Estimator
 
 A machine learning web application built with **Streamlit** and **Scikit-Learn** that predicts technology salaries based on user parameters using **Multiple Linear Regression**.
-
----
-
-## 🚀 Live Demo
-You can access the live interactive application here:  
-👉 **[Insert Your Streamlit Cloud App URL Here]**
 
 ---
 
@@ -29,9 +22,5 @@ This project predicts estimated tech compensation by analyzing key factors that 
 
 ---
 
-## 💻 How to Run Locally
-
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git)
-   cd YOUR_REPOSITORY_NAME
+## 📝 License
+This project is created for educational and presentation purposes.
