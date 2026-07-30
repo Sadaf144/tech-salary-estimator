@@ -1,5 +1,4 @@
-# 1. Install dependencies
-!pip install streamlit scikit-learn pandas numpy matplotlib seaborn -q
+
 
 # 2. Write app.py
 app_code = """
