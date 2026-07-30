@@ -1,84 +1,89 @@
-
-
-# 2. Write app.py
-app_code = """
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score, mean_squared_error
 
-st.set_page_config(page_title="Tech Salary Estimator", page_icon="💼", layout="wide")
-st.title("💼 Tech Salary Estimator")
+# Page Setup
+st.set_page_config(page_title="Know Your Worth", layout="wide")
+
+# Custom CSS for Blue Header Bar
+st.markdown("""
+<style>
+    .main-header {
+        background-color: #2F98C3;
+        color: white;
+        padding: 1rem;
+        border-radius: 5px;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 @st.cache_data
-def load_data():
+def train_model():
     np.random.seed(42)
     n = 400
     exp = np.random.uniform(0.5, 15.0, n)
     edu = np.random.choice([0, 1, 2], size=n, p=[0.6, 0.3, 0.1])
     skills = np.random.randint(1, 9, n)
     hub = np.random.choice([0, 1], size=n, p=[0.65, 0.35])
-    salary = 50000 + (exp * 8500) + (edu * 12000) + (skills * 3500) + (hub * 20000) + np.random.normal(0, 7500, n)
-    return pd.DataFrame({'YearsExperience': exp, 'EducationLevel': edu, 'SkillsCount': skills, 'IsTechHub': hub, 'Salary': salary})
 
-df = load_data()
+    salary = (50000 + (exp * 8500) + (edu * 12000) + 
+              (skills * 3500) + (hub * 20000) + 
+              np.random.normal(0, 7500, n))
 
-X = df[['YearsExperience', 'EducationLevel', 'SkillsCount', 'IsTechHub']]
-y = df['Salary']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    df = pd.DataFrame({
+        'YearsExperience': exp, 
+        'EducationLevel': edu, 
+        'SkillsCount': skills, 
+        'IsTechHub': hub, 
+        'Salary': salary
+    })
+    
+    X = df[['YearsExperience', 'EducationLevel', 'SkillsCount', 'IsTechHub']]
+    y = df['Salary']
+    model = LinearRegression().fit(X, y)
+    
+    exp_sorted = np.sort(exp)
+    trend = 50000 + (exp_sorted * 8500)
+    chart_df = pd.DataFrame({'Experience': exp_sorted, 'Estimated Salary Trend': trend})
+    
+    return model, chart_df
 
-simple_model = LinearRegression().fit(X_train[['YearsExperience']], y_train)
-multi_model = LinearRegression().fit(X_train, y_train)
+model, chart_df = train_model()
 
-st.header("1. Model Performance")
-c1, c2 = st.columns(2)
-c1.metric("Simple Model R²", f"{r2_score(y_test, simple_model.predict(X_test[['YearsExperience']])):.3f}")
-c2.metric("Multiple Model R²", f"{r2_score(y_test, multi_model.predict(X_test)):.3f}")
+# Blue Header
+st.markdown("<div class='main-header'>Know Your Worth</div>", unsafe_allow_html=True)
 
-st.header("2. Live Predictor")
-exp = st.slider("Years of Experience", 0.0, 20.0, 5.0)
-edu_label = st.radio("Education", ["Bachelor's", "Master's", "PhD"])
-edu = {"Bachelor's": 0, "Master's": 1, "PhD": 2}[edu_label]
-skills = st.slider("Skills Count", 1, 10, 4)
-hub_label = st.radio("Location", ["Standard", "Tech Hub"])
-hub = {"Standard": 0, "Tech Hub": 1}[hub_label]
+# Sidebar Inputs
+st.sidebar.header("User Profile")
+job_title = st.sidebar.text_input("Job Title", value="Software Engineer")
+edu_label = st.sidebar.selectbox("Education Level", ["Bachelor's", "Master's", "PhD"])
+edu_val = {"Bachelor's": 0, "Master's": 1, "PhD": 2}[edu_label]
+skills = st.sidebar.slider("Technical Skills Count", 1, 10, 5)
+is_hub = st.sidebar.checkbox("Located in Major Tech Hub")
+hub_val = 1 if is_hub else 0
+exp = st.sidebar.slider("Years of Experience", 0.0, 20.0, 5.0, 0.5)
 
-pred_m = multi_model.predict([[exp, edu, skills, hub]])[0]
-st.subheader(f"Estimated Salary: **${pred_m:,.2f}**")
-"""
+# Calculate Prediction
+pred_salary = model.predict([[exp, edu_val, skills, hub_val]])[0]
 
-with open("app.py", "w") as f:
-    f.write(app_code)
+# UI Layout
+col1, col2 = st.columns([1, 2])
 
-print("✅ app.py successfully created!")
-import time
-import subprocess
-import signal
+with col1:
+    st.metric("Estimated Salary", f"${pred_salary:,.0f}")
+    st.write(f"💼 **Title:** {job_title}")
+    st.write(f"🎓 **Education:** {edu_label}")
+    st.write(f"📍 **Location:** {'Tech Hub' if is_hub else 'Standard'}")
+    st.write(f"🕒 **Experience:** {exp} years")
 
-# 1. Kill old instances (important for Colab)
-try:
-    print("Stopping previous instances...")
-    taskkill = subprocess.Popen(["taskkill", "/F", "/IM", "cloudflared.exe"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    taskkill.wait()
-    time.sleep(2)
-except Exception:
-    pass
+with col2:
+    st.subheader("Salary Growth Trend")
+    st.line_chart(chart_df, x='Experience', y='Estimated Salary Trend')
 
-# 2. Check if cloudflared is downloaded
-try:
-    with open("cloudflared", "r"):
-        pass
-except FileNotFoundError:
-    print("Downloading Cloudflare tunnel tool...")
-    !wget -q -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-    !chmod +x cloudflared
-
-# 3. Run the updated Streamlit app in background
-subprocess.Popen(["streamlit", "run", "app.py", "--server.port", "8501"])
-time.sleep(3)
-
-# 4. Start Cloudflare tunnel and print the new link
-print("🚀 Launching Simplified App with Cloudflare Tunnel...\nLink will appear below:\n")
-!./cloudflared tunnel --url http://localhost:8501 2>&1 | grep -o 'https://.*\.trycloudflare\.com'
+st.markdown("---")
+st.subheader("How you compare")
+st.write("This prediction represents estimated compensation based on profile parameters across technical roles.")
